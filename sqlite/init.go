@@ -5,7 +5,9 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"os"
 	"path"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -72,8 +74,21 @@ func migrate(db *sql.DB) error {
 }
 
 func InitDb() *sql.DB {
-	db, err := sql.Open("sqlite3", "./subscribehn.db")
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "."
+	}
+
+	db, err := sql.Open("sqlite3", filepath.Join(dbPath, "subscribehn.db"))
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := db.Exec("PRAGMA journal_mode = 'WAL'"); err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := db.Exec("PRAGMA foreign_keys = 'ON'"); err != nil {
 		log.Fatal(err)
 	}
 

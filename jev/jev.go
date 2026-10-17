@@ -94,5 +94,3 @@ func (r *Answers) UnmarshalJSON(b []byte) error {
 	*r = out
 	return nil
 }
-
-// func decodeAs[T Answer](msg []byte)

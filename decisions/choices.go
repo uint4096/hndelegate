@@ -9,11 +9,12 @@ type Choice struct {
 	Id                    int
 	Value                 string
 	Decision              int
+	Description           sql.Null[string]
 	AcceptableProbability sql.Null[float64]
 }
 
 func getChoices(db *sql.DB) ([]Choice, error) {
-	rows, err := db.Query("SELECT id, value, decision, acceptable_probability FROM Choices ORDER BY id")
+	rows, err := db.Query("SELECT id, value, decision, description, acceptable_probability FROM Choices ORDER BY id")
 	if err != nil {
 		return []Choice{}, fmt.Errorf("fetch choices. %w", err)
 	}
@@ -22,7 +23,7 @@ func getChoices(db *sql.DB) ([]Choice, error) {
 	choices := []Choice{}
 	for rows.Next() {
 		choice := Choice{}
-		if err := rows.Scan(&choice.Id, &choice.Value, &choice.Decision, &choice.AcceptableProbability); err != nil {
+		if err := rows.Scan(&choice.Id, &choice.Value, &choice.Decision, &choice.Description, &choice.AcceptableProbability); err != nil {
 			return []Choice{}, fmt.Errorf("scan choices. %w", err)
 		}
 

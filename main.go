@@ -11,7 +11,7 @@ func main() {
 	db := sqlite.InitDb()
 	defer db.Close()
 
-	dTree, err := decisions.ConstructDecisionTree(db)
+	dTree, err := decisions.ConstructTree(db)
 	if err != nil {
 		log.Fatal()
 	}
@@ -21,5 +21,5 @@ func main() {
 		fmt.Printf("Type: %s, Instructions: %s, Choices: %v \n", tree.Type, tree.Instruction, tree.Choices)
 	}
 
-	decisions.ParseDecisionTree(dTree, parser)
+	decisions.WalkBreadthFirst(dTree, parser)
 }

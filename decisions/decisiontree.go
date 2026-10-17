@@ -42,12 +42,16 @@ func getDecisions(db *sql.DB) (DecisionRecords, error) {
 	return DecisionRecords{records}, nil
 }
 
-type DecisionTree struct {
+type Decision struct {
 	Id          int
 	Type        string
 	Instruction string
 	Choices     []Choice
-	Children    []*DecisionTree
+}
+
+type DecisionTree struct {
+	Decision
+	Children []*DecisionTree
 }
 
 func (d DecisionRecords) tree(choices map[int][]Choice) []*DecisionTree {

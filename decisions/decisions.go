@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-func ConstructDecisionTree(db *sql.DB) ([]*DecisionTree, error) {
+func ConstructTree(db *sql.DB) ([]*DecisionTree, error) {
 	d, err := getDecisions(db)
 	if err != nil {
 		return []*DecisionTree{}, err
@@ -24,9 +24,14 @@ func ConstructDecisionTree(db *sql.DB) ([]*DecisionTree, error) {
 
 type ParserFunction = func(*DecisionTree)
 
-func ParseDecisionTree(tree []*DecisionTree, parser ParserFunction) {
-	for _, decision := range tree {
-		parser(decision)
-		ParseDecisionTree(decision.Children, parser)
+func WalkBreadthFirst(tree []*DecisionTree, parser ParserFunction) {
+	for _, node := range tree {
+		queue := []*DecisionTree{node}
+
+		for i := 0; i < len(queue); i++ {
+			decision := queue[i]
+			parser(decision)
+			queue = append(queue, decision.Children...)
+		}
 	}
 }

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"subscribehn/content"
 	"subscribehn/jev"
+	"subscribehn/transport"
 )
 
-func Classify(target string, questions map[string]jev.Question) (bool, error) {
+func ClassifyAndSend(target string, questions map[string]jev.Question, t transport.Transport) (bool, error) {
 	fetcher := content.NewFetcher()
 
 	state, err := fetcher.Get(target)
@@ -32,6 +33,16 @@ func Classify(target string, questions map[string]jev.Question) (bool, error) {
 	resp, err := client.Ask(&req)
 	if err != nil {
 		return false, fmt.Errorf("jev request: %w", err)
+	}
+
+	message := transport.Post{
+		Title:         state.Title,
+		ArticleURL:    target,
+		DiscussionURL: "https://news.ycombinator.com",
+	}
+
+	if err := t.Send(message); err != nil {
+		return false, fmt.Errorf("transport send: %w", err)
 	}
 
 	fmt.Printf("%+v", resp)

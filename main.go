@@ -7,6 +7,7 @@ import (
 	"log"
 	"subscribehn/classifier"
 	"subscribehn/sqlite"
+	"subscribehn/transport"
 
 	"github.com/joho/godotenv"
 )
@@ -40,9 +41,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	accepted, err := classifier.Classify(
+	transport, err := transport.NewTelegram()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	accepted, err := classifier.ClassifyAndSend(
 		"https://davidoks.blog/p/why-china-got-rich-and-india-didnt",
 		questions,
+		transport,
 	)
 	if err != nil {
 		log.Fatal(err)

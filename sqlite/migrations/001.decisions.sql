@@ -5,6 +5,12 @@ CREATE TABLE IF NOT EXISTS Decisions (
     instruction TEXT NOT NULL,
     parent INTEGER,
     version INTEGER NOT NULL,
+    min_confidence FLOAT,
+    UNIQUE (name, version),
+    CHECK(
+        min_confidence IS NULL
+        OR (type = 'choice' AND min_confidence BETWEEN 0 AND 1)
+    ),
     FOREIGN KEY (parent) REFERENCES Decisions(id)
 );
 

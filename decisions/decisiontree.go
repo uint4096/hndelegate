@@ -6,12 +6,13 @@ import (
 )
 
 type DecisionRecord struct {
-	Id          int
-	Type        string
-	Name        string
-	Instruction string
-	Parent      sql.Null[int]
-	Version     int
+	Id            int
+	Type          string
+	Name          string
+	Instruction   string
+	Parent        sql.Null[int]
+	Version       int
+	MinConfidence sql.Null[float64]
 }
 
 type DecisionRecords struct {
@@ -19,7 +20,7 @@ type DecisionRecords struct {
 }
 
 func getDecisions(db *sql.DB) (DecisionRecords, error) {
-	rows, err := db.Query("SELECT id, type, name, instruction, parent from Decisions ORDER BY id")
+	rows, err := db.Query("SELECT id, type, name, instruction, parent, min_confidence from Decisions ORDER BY id")
 	if err != nil {
 		return DecisionRecords{}, fmt.Errorf("fetch decisions. %w", err)
 	}
@@ -29,7 +30,7 @@ func getDecisions(db *sql.DB) (DecisionRecords, error) {
 
 	for rows.Next() {
 		record := DecisionRecord{}
-		if err := rows.Scan(&record.Id, &record.Type, &record.Name, &record.Instruction, &record.Parent); err != nil {
+		if err := rows.Scan(&record.Id, &record.Type, &record.Name, &record.Instruction, &record.Parent, &record.MinConfidence); err != nil {
 			return DecisionRecords{}, fmt.Errorf("scan decisions. %w", err)
 		}
 
@@ -44,11 +45,12 @@ func getDecisions(db *sql.DB) (DecisionRecords, error) {
 }
 
 type Decision struct {
-	Id          int
-	Type        string
-	Name        string
-	Instruction string
-	Choices     []Choice
+	Id            int
+	Type          string
+	Name          string
+	Instruction   string
+	Choices       []Choice
+	MinConfidence float64
 }
 
 type DecisionTree struct {
@@ -70,7 +72,15 @@ func (d DecisionRecords) tree(choices map[int][]Choice) []*DecisionTree {
 
 	var build func(DecisionRecord) *DecisionTree
 	build = func(target DecisionRecord) *DecisionTree {
-		d := DecisionTree{Id: target.Id, Type: target.Type, Name: target.Name, Instruction: target.Instruction, Choices: choices[target.Id]}
+		d := DecisionTree{
+			Id:            target.Id,
+			Type:          target.Type,
+			Name:          target.Name,
+			Instruction:   target.Instruction,
+			Choices:       choices[target.Id],
+			MinConfidence: target.MinConfidence.V,
+		}
+
 		for _, record := range children[target.Id] {
 			d.Children = append(d.Children, build(record))
 		}

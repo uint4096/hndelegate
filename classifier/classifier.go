@@ -2,20 +2,23 @@ package classifier
 
 import (
 	"fmt"
+	"subscribehn/content"
 	"subscribehn/jev"
 )
 
-type Post struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
+func Classify(target string, questions map[string]jev.Question) (bool, error) {
+	fetcher := content.NewFetcher()
 
-func Classify(state Post, questions map[string]jev.Question) (bool, error) {
+	state, err := fetcher.Get(target)
+	if err != nil {
+		return false, fmt.Errorf("post fetch %s: %w", target, err)
+	}
+
 	if len(questions) == 0 {
 		return false, fmt.Errorf("no questions")
 	}
 
-	req := jev.Request[Post]{
+	req := jev.Request[*content.Post]{
 		State:     state,
 		Model:     "jev-latest",
 		Questions: questions,

@@ -52,7 +52,6 @@ func (client *Client) Ask[T any](b *Request[T]) (Response, error) {
 
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.apiKey))
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("User-Agent", "uint4096/subscribehn (+https://github.com/uint4096/subscribehn)")
 
 	resp, err := client.httpClient.Do(request)
 	if err != nil {

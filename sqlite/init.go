@@ -79,16 +79,8 @@ func InitDb() *sql.DB {
 		dbPath = "."
 	}
 
-	db, err := sql.Open("sqlite3", filepath.Join(dbPath, "subscribehn.db"))
+	db, err := sql.Open("sqlite3", filepath.Join(dbPath, "subscribehn.db?_foreign_keys=on&_journal_mode=WAL"))
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	if _, err := db.Exec("PRAGMA journal_mode = 'WAL'"); err != nil {
-		log.Fatal(err)
-	}
-
-	if _, err := db.Exec("PRAGMA foreign_keys = 'ON'"); err != nil {
 		log.Fatal(err)
 	}
 

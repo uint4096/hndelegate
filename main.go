@@ -1,9 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
-	"os"
 	"subscribehn/classifier"
 	"subscribehn/sqlite"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Fatal(err)
 	}
 
@@ -34,18 +35,15 @@ func main() {
 	//
 	// decisions.WalkBreadthFirst(dTree, parser)
 
-	title := "How I use HTMX with Go"
-	content, err := os.ReadFile("article.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	questions, err := classifier.FormatQuestions(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	accepted, err := classifier.Classify(classifier.Post{Title: title, Content: string(content)}, questions)
+	accepted, err := classifier.Classify(
+		"https://davidoks.blog/p/why-china-got-rich-and-india-didnt",
+		questions,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

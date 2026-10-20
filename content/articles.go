@@ -12,21 +12,21 @@ type Article struct {
 	HNID int
 }
 
-func getArticles(db *sql.DB) ([]Article, error) {
-	rows, err := db.Query("SELECT id, hn_id FROM Articles WHERE expires_at > unixepoch() ORDER BY id LIMIT 500")
+func getArticles(db *sql.DB) (map[int]Article, error) {
+	rows, err := db.Query("SELECT id, hn_id FROM Articles WHERE expires_at > unixepoch() ORDER BY hn_id desc LIMIT 500")
 	if err != nil {
 		return nil, fmt.Errorf("articles fetch: %w", err)
 	}
 	defer rows.Close()
 
-	articles := []Article{}
+	articles := map[int]Article{}
 	for rows.Next() {
 		article := Article{}
 		if err := rows.Scan(&article.ID, &article.HNID); err != nil {
 			return nil, fmt.Errorf("articles scan: %w", err)
 		}
 
-		articles = append(articles, article)
+		articles[article.HNID] = article
 	}
 
 	if err := rows.Err(); err != nil {

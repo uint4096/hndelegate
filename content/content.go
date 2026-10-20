@@ -21,7 +21,7 @@ type Fetcher struct {
 	client *http.Client
 }
 
-func NewFetcher() *Fetcher {
+func newFetcher() *Fetcher {
 	client := http.Client{
 		Timeout: 20 * time.Second,
 	}
@@ -29,7 +29,7 @@ func NewFetcher() *Fetcher {
 	return &Fetcher{client: &client}
 }
 
-func (f *Fetcher) Get(targetURL string) (*Post, error) {
+func (f *Fetcher) get(targetURL string) (*Post, error) {
 	request, err := http.NewRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("content request. url: %s, err: %w", targetURL, err)

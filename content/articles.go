@@ -12,7 +12,7 @@ type Article struct {
 	HNID int
 }
 
-func getArticles(db *sql.DB) (map[int]Article, error) {
+func GetArticles(db *sql.DB) (map[int]Article, error) {
 	rows, err := db.Query("SELECT id, hn_id FROM Articles WHERE expires_at > unixepoch() ORDER BY hn_id desc LIMIT 500")
 	if err != nil {
 		return nil, fmt.Errorf("articles fetch: %w", err)
@@ -36,7 +36,7 @@ func getArticles(db *sql.DB) (map[int]Article, error) {
 	return articles, nil
 }
 
-func createArticles(db *sql.DB, articleIds []int) error {
+func CreateArticles(db *sql.DB, articleIds []int) error {
 	if len(articleIds) == 0 {
 		return nil
 	}

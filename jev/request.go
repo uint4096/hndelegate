@@ -32,7 +32,7 @@ func NewClient() (*Client, error) {
 	return &j, nil
 }
 
-func (client *Client) Ask[T any](b *Request[T]) (Response, error) {
+func (client *Client) req[T any](b *Request[T]) (Response, error) {
 	for _, q := range b.Questions {
 		if !q.Type.Valid() {
 			return Response{}, fmt.Errorf("invalid question type")
@@ -74,4 +74,19 @@ func (client *Client) Ask[T any](b *Request[T]) (Response, error) {
 	}
 
 	return m, nil
+}
+
+func (client *Client) Ask[T any](state T, questions map[string]Question) (*Response, error) {
+	request := Request[T]{
+		State:     state,
+		Model:     "jev-latest",
+		Questions: questions,
+	}
+
+	resp, err := client.req(&request)
+	if err != nil {
+		return nil, fmt.Errorf("jev request: %w", err)
+	}
+
+	return &resp, nil
 }

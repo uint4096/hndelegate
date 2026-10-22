@@ -2,12 +2,9 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"log"
-	"subscribehn/classifier"
 	"subscribehn/sqlite"
-	"subscribehn/transport"
 
 	"github.com/joho/godotenv"
 )
@@ -36,24 +33,27 @@ func main() {
 	//
 	// decisions.WalkBreadthFirst(dTree, parser)
 
-	questions, err := classifier.FormatQuestions(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	transport, err := transport.NewTelegram()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	accepted, err := classifier.ClassifyAndSend(
-		"https://davidoks.blog/p/why-china-got-rich-and-india-didnt",
-		questions,
-		transport,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Accpted: %t\n", accepted)
+	//	questions, err := classifier.FormatQuestions(db)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	//	transport, err := transport.NewTelegram()
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	// accepted, err := classifier.ClassifyAndSend(
+	//
+	//	"https://davidoks.blog/p/why-china-got-rich-and-india-didnt",
+	//	questions,
+	//	transport,
+	//
+	// )
+	//
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	// fmt.Printf("Accpted: %t\n", accepted)
 }

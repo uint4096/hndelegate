@@ -19,7 +19,7 @@ type HNClient struct {
 	baseURL string
 }
 
-func newHNClient() *HNClient {
+func NewHNClient() *HNClient {
 	client := HNClient{
 		client: &http.Client{
 			Timeout: 30 * time.Second,
@@ -86,20 +86,19 @@ type HNItem struct {
 	URL   string   `json:"url"`
 }
 
-func (hn *HNClient) getItem(id int) (*HNItem, error) {
+func (hn *HNClient) GetItem(id int) (*HNItem, error) {
 	return hn.get[HNItem](fmt.Sprintf("item/%d.json", id))
 }
 
-func WithHNStory(db *sql.DB, fn func(*HNItem, string) error) error {
-	hnClient := newHNClient()
-	storyIDs, err := hnClient.getStoryIDs()
+func (hn *HNClient) GetNewItemIds(db *sql.DB) ([]int, error) {
+	storyIDs, err := hn.getStoryIDs()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	savedIDs, err := getArticles(db)
+	savedIDs, err := GetArticles(db)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	filteredIDs := []int{}
@@ -109,49 +108,5 @@ func WithHNStory(db *sql.DB, fn func(*HNItem, string) error) error {
 		}
 	}
 
-	fetcher := newFetcher()
-
-	parser := func(id int) error {
-		story, err := hnClient.getItem(id)
-		if err != nil {
-			return err
-		}
-
-		article, err := fetcher.get(story.URL)
-		if err != nil {
-			return err
-		}
-
-		return fn(story, article.Content)
-	}
-
-	type result struct {
-		id  int
-		err error
-	}
-
-	ch := make(chan result)
-	sem := make(chan struct{}, 5)
-	for _, id := range filteredIDs {
-		go func() {
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			err := parser(id)
-			ch <- result{id, err}
-		}()
-	}
-
-	for range filteredIDs {
-		res := <-ch
-
-		if res.err != nil {
-			fmt.Printf("hn parser. id: %d. err: %v\n", res.id, res.err)
-		}
-	}
-
-	if err := createArticles(db, filteredIDs); err != nil {
-		return err
-	}
-
-	return nil
+	return filteredIDs, nil
 }

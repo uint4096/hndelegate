@@ -1,49 +1,96 @@
 package classifier
 
 import (
+	"fmt"
+	"subscribehn/content"
+	"subscribehn/decisions"
 	"subscribehn/jev"
 	"subscribehn/transport"
 )
 
-func ClassifyAndSend(target string, questions map[string]jev.Question, t transport.Transport) (bool, error) {
-	// 	fetcher := content.NewFetcher()
-	//
-	// 	state, err := fetcher.Get(target)
-	// 	if err != nil {
-	// 		return false, fmt.Errorf("post fetch %s: %w", target, err)
-	// 	}
-	//
-	// 	if len(questions) == 0 {
-	// 		return false, fmt.Errorf("no questions")
-	// 	}
-	//
-	// 	req := jev.Request[*content.Post]{
-	// 		State:     state,
-	// 		Model:     "jev-latest",
-	// 		Questions: questions,
-	// 	}
-	//
-	// 	client, err := jev.NewClient()
-	// 	if err != nil {
-	// 		return false, fmt.Errorf("jev client init: %w", err)
-	// 	}
-	//
-	// 	resp, err := client.Ask(&req)
-	// 	if err != nil {
-	// 		return false, fmt.Errorf("jev request: %w", err)
-	// 	}
-	//
-	// 	message := transport.Post{
-	// 		Title:         state.Title,
-	// 		ArticleURL:    target,
-	// 		DiscussionURL: "https://news.ycombinator.com",
-	// 	}
-	//
-	// 	if err := t.Send(message); err != nil {
-	// 		return false, fmt.Errorf("transport send: %w", err)
-	// 	}
-	//
-	// 	fmt.Printf("%+v", resp)
-	//
-	return true, nil
+type HNError struct {
+	ID   int
+	Err  error
+	Item *content.HNItem
+}
+
+func WalkHNItems(itemIDs []int, fn func(item *content.HNItem, post *content.Post) error) []HNError {
+	hnClient := content.NewHNClient()
+
+	errors := []HNError{}
+	fetcher := content.NewFetcher()
+	ch := make(chan HNError)
+	semaphore := make(chan struct{}, 5)
+
+	for _, id := range itemIDs {
+		go func() {
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+			item, err := hnClient.GetItem(id)
+			if err != nil {
+				ch <- HNError{id, err, item}
+				return
+			}
+
+			if item.Type != content.Story || item.URL == "" {
+				ch <- HNError{ID: id, Item: item}
+				return
+			}
+
+			post, err := fetcher.Get(item.URL)
+			if err != nil {
+				ch <- HNError{id, err, item}
+				return
+			}
+
+			ch <- HNError{ID: id, Err: fn(item, post), Item: item}
+		}()
+	}
+
+	for range itemIDs {
+		hnErr := <-ch
+
+		if hnErr.Err != nil {
+			errors = append(errors, hnErr)
+		}
+	}
+
+	return errors
+}
+
+func ClassifyAndSend(
+	itemIDs []int,
+	roots []*decisions.DecisionTree,
+	questions map[string]jev.Question,
+	model *jev.Client,
+	t transport.Transport,
+) []HNError {
+	if len(questions) == 0 || len(itemIDs) == 0 {
+		return []HNError{}
+	}
+
+	w := func(item *content.HNItem, post *content.Post) error {
+		resp, err := model.Ask(post, questions)
+		if err != nil {
+			return fmt.Errorf("jev request: %w", err)
+		}
+
+		if isAccepted(roots, resp.Answers) {
+			message := transport.Post{
+				Title:         item.Title,
+				ArticleURL:    item.URL,
+				DiscussionURL: fmt.Sprintf(`https://news.ycombinator.com/item?id=%d`, item.ID),
+			}
+
+			if err := t.Send(message); err != nil {
+				return fmt.Errorf("transport send: %w", err)
+			}
+		}
+
+		return nil
+	}
+
+	errors := WalkHNItems(itemIDs, w)
+
+	return errors
 }

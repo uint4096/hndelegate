@@ -2,9 +2,10 @@ package classifier
 
 import (
 	"fmt"
+	"slices"
 	"subscribehn/content"
 	"subscribehn/decisions"
-	"subscribehn/jev"
+	"subscribehn/model"
 	"subscribehn/transport"
 )
 
@@ -58,24 +59,35 @@ func WalkHNItems(itemIDs []int, fn func(item *content.HNItem, post *content.Post
 	return errors
 }
 
-func ClassifyAndSend(
+func ClassifyAndSend[A any](
 	itemIDs []int,
 	roots []*decisions.DecisionTree,
-	questions map[string]jev.Question,
-	model *jev.Client,
+	model model.Model[A],
 	t transport.Transport,
 ) []HNError {
-	if len(questions) == 0 || len(itemIDs) == 0 {
+	if len(itemIDs) == 0 {
 		return []HNError{}
 	}
 
 	w := func(item *content.HNItem, post *content.Post) error {
-		resp, err := model.Ask(post, questions)
+		resp, err := model.Ask(post, roots)
 		if err != nil {
-			return fmt.Errorf("jev request: %w", err)
+			return fmt.Errorf("model ask: %w", err)
 		}
 
-		if isAccepted(roots, resp.Answers) {
+		var isAccepted func(nodes []*decisions.DecisionTree) bool
+		isAccepted = func(nodes []*decisions.DecisionTree) bool {
+			if len(nodes) == 0 {
+				return true
+			}
+
+			return slices.ContainsFunc(nodes, func(n *decisions.DecisionTree) bool {
+				answer, ok := resp[n.Name]
+				return ok && model.IsAccepted(answer, n) && isAccepted(n.Children)
+			})
+		}
+
+		if isAccepted(roots) {
 			message := transport.Post{
 				Title:         item.Title,
 				ArticleURL:    item.URL,

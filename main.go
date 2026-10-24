@@ -8,7 +8,7 @@ import (
 	"subscribehn/classifier"
 	"subscribehn/content"
 	"subscribehn/decisions"
-	"subscribehn/jev"
+	"subscribehn/model"
 	"subscribehn/sqlite"
 	"subscribehn/transport"
 	"time"
@@ -31,7 +31,7 @@ func main() {
 
 	hn := content.NewHNClient()
 
-	model, err := jev.NewClient()
+	jev, err := model.NewJev()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,12 +41,6 @@ func main() {
 
 	for {
 		dTree, err := decisions.ConstructTree(db)
-		if err != nil {
-			transport.Alert(err.Error())
-			log.Fatal(err)
-		}
-
-		questions, err := classifier.FormatQuestions(dTree)
 		if err != nil {
 			transport.Alert(err.Error())
 			log.Fatal(err)
@@ -70,8 +64,7 @@ func main() {
 		hnErrs := classifier.ClassifyAndSend(
 			itemIDs,
 			dTree,
-			questions,
-			model,
+			jev,
 			transport,
 		)
 

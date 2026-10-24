@@ -127,6 +127,9 @@ func NewJev() (*Jev, error) {
 	return &j, nil
 }
 
+const NoneChoice = "None"
+const NoneDescription = "None of the other options apply. Choose this if no option is clearly the main subject, if the options are only mentioned in passing, or if the content is about something else entirely."
+
 func formatQuestions(dTree []*decisions.DecisionTree) (map[string]Question, error) {
 	questions := make(map[string]Question)
 
@@ -143,6 +146,8 @@ func formatQuestions(dTree []*decisions.DecisionTree) (map[string]Question, erro
 				}
 				criteria[c.Value] = description
 			}
+
+			criteria[NoneChoice] = NoneDescription
 
 			question = Question{Type: Choice, Instructions: d.Instruction, Criteria: criteria}
 		case string(Noul):
@@ -238,6 +243,10 @@ func (client *Jev) IsAccepted(answer Answer, d *decisions.DecisionTree) bool {
 
 	switch a := answer.(type) {
 	case ChoiceResponse:
+		if a.Choice == NoneChoice {
+			return false
+		}
+
 		i := slices.IndexFunc(choices, func(c decisions.Choice) bool {
 			return c.Value == a.Choice
 		})

@@ -8,4 +8,5 @@ type Post struct {
 
 type Transport interface {
 	Send(msg Post) error
+	Alert(msg string)
 }

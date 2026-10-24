@@ -3,9 +3,11 @@ package transport
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -40,10 +42,10 @@ type telegramRequestBody struct {
 	ParseMode string `json:"parse_mode"`
 }
 
-func (transport *Telegram) Send(msg Post) error {
-	url := fmt.Sprintf("%s/%s", transport.requestURL, "sendMessage")
+func (t *Telegram) Send(msg Post) error {
+	u := fmt.Sprintf("%s/%s", t.requestURL, "sendMessage")
 	message := fmt.Sprintf(`%s`+"\n"+`<a href="%s">Article</a>  `+`<a href="%s">Discussion</a>`, html.EscapeString(msg.Title), html.EscapeString(msg.ArticleURL), html.EscapeString(msg.DiscussionURL))
-	body := telegramRequestBody{ChatID: transport.chatID, Text: message, ParseMode: "HTML"}
+	body := telegramRequestBody{ChatID: t.chatID, Text: message, ParseMode: "HTML"}
 
 	b, err := json.Marshal(body)
 	if err != nil {
@@ -52,14 +54,18 @@ func (transport *Telegram) Send(msg Post) error {
 
 	r := bytes.NewReader(b)
 
-	request, err := http.NewRequest(http.MethodPost, url, r)
+	request, err := http.NewRequest(http.MethodPost, u, r)
 	if err != nil {
 		return fmt.Errorf("telegram body: %w", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
 
-	resp, err := transport.client.Do(request)
+	resp, err := t.client.Do(request)
 	if err != nil {
+		e, ok := errors.AsType[*url.Error](err)
+		if ok {
+			err = e.Err
+		}
 		return fmt.Errorf("telegram request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -69,4 +75,8 @@ func (transport *Telegram) Send(msg Post) error {
 	}
 
 	return nil
+}
+
+func (t *Telegram) Alert(msg string) {
+	fmt.Println(msg)
 }

@@ -1,13 +1,12 @@
 package classifier
 
 import (
-	"database/sql"
 	"fmt"
 	"subscribehn/decisions"
 	"subscribehn/jev"
 )
 
-func questionsFromDecisionTree(dTree []*decisions.DecisionTree) (map[string]jev.Question, error) {
+func FormatQuestions(dTree []*decisions.DecisionTree) (map[string]jev.Question, error) {
 	questions := make(map[string]jev.Question)
 
 	var parser func(*decisions.DecisionTree) error
@@ -39,20 +38,6 @@ func questionsFromDecisionTree(dTree []*decisions.DecisionTree) (map[string]jev.
 
 	if err := decisions.WalkBreadthFirst(dTree, parser); err != nil {
 		return questions, err
-	}
-
-	return questions, nil
-}
-
-func FormatQuestions(db *sql.DB) (map[string]jev.Question, error) {
-	dTree, err := decisions.ConstructTree(db)
-	if err != nil {
-		return nil, err
-	}
-
-	questions, err := questionsFromDecisionTree(dTree)
-	if err != nil {
-		return nil, err
 	}
 
 	return questions, nil

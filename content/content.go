@@ -29,6 +29,16 @@ func NewFetcher() *Fetcher {
 	return &Fetcher{client: &client}
 }
 
+func truncateWords(s string, n int) string {
+	words := strings.Fields(s)
+
+	if len(words) <= n {
+		return s
+	}
+
+	return strings.Join(words[:n], " ")
+}
+
 func (f *Fetcher) Get(targetURL string) (*Post, error) {
 	request, err := http.NewRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
@@ -63,5 +73,8 @@ func (f *Fetcher) Get(targetURL string) (*Post, error) {
 		return nil, fmt.Errorf("article render. url: %s, err: %w", resp.Request.URL, err)
 	}
 
-	return &Post{Title: article.Title(), Content: text.String()}, nil
+	return &Post{
+		Title:   article.Title(),
+		Content: truncateWords(text.String(), 3000),
+	}, nil
 }

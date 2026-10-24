@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,17 +14,19 @@ import (
 )
 
 type Telegram struct {
-	client     *http.Client
-	requestURL string
-	chatID     string
+	client      *http.Client
+	requestURL  string
+	chatID      string
+	errorChatID string
 }
 
 func NewTelegram() (*Telegram, error) {
 	chatID := os.Getenv("TELEGRAM_CHAT_ID")
+	errorChatID := os.Getenv("TELEGRAM_ERROR_CHAT_ID")
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	baseURL := os.Getenv("TELEGRAM_BASE_URL")
 
-	if chatID == "" || botToken == "" || baseURL == "" {
+	if chatID == "" || botToken == "" || baseURL == "" || errorChatID == "" {
 		return nil, fmt.Errorf("missing telegram creds")
 	}
 
@@ -33,7 +36,7 @@ func NewTelegram() (*Telegram, error) {
 
 	requestURL := fmt.Sprintf("%s/bot%s", baseURL, botToken)
 
-	return &Telegram{chatID: chatID, client: &client, requestURL: requestURL}, nil
+	return &Telegram{chatID: chatID, errorChatID: errorChatID, client: &client, requestURL: requestURL}, nil
 }
 
 type telegramRequestBody struct {
@@ -42,10 +45,9 @@ type telegramRequestBody struct {
 	ParseMode string `json:"parse_mode"`
 }
 
-func (t *Telegram) Send(msg Post) error {
+func (t *Telegram) send(chatID string, msg string) error {
 	u := fmt.Sprintf("%s/%s", t.requestURL, "sendMessage")
-	message := fmt.Sprintf(`%s`+"\n"+`<a href="%s">Article</a>  `+`<a href="%s">Discussion</a>`, html.EscapeString(msg.Title), html.EscapeString(msg.ArticleURL), html.EscapeString(msg.DiscussionURL))
-	body := telegramRequestBody{ChatID: t.chatID, Text: message, ParseMode: "HTML"}
+	body := telegramRequestBody{ChatID: chatID, Text: msg, ParseMode: "HTML"}
 
 	b, err := json.Marshal(body)
 	if err != nil {
@@ -77,6 +79,20 @@ func (t *Telegram) Send(msg Post) error {
 	return nil
 }
 
+func (t *Telegram) Send(msg Post) error {
+	message := fmt.Sprintf(
+		`%s`+"\n"+`<a href="%s">Article</a> `+`<a href="%s">Discussion</a>`,
+		html.EscapeString(msg.Title),
+		html.EscapeString(msg.ArticleURL),
+		html.EscapeString(msg.DiscussionURL),
+	)
+
+	return t.send(t.chatID, message)
+}
+
 func (t *Telegram) Alert(msg string) {
-	fmt.Println(msg)
+	m := fmt.Sprintf(`%s`, html.EscapeString(msg[:min(len(msg), 3500)]))
+	if err := t.send(t.errorChatID, m); err != nil {
+		log.Printf("failed alert. err: %v\n", err)
+	}
 }

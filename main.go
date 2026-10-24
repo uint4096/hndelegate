@@ -11,6 +11,7 @@ import (
 	"hndelegate/transport"
 	"io/fs"
 	"log"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -61,20 +62,23 @@ func main() {
 		}
 		failedHNCount = 0
 
-		hnErrs := classifier.ClassifyAndSend(
-			itemIDs,
-			dTree,
-			jev,
-			transport,
-		)
+		isSeedMode := os.Getenv("SEED_MODE")
+		if isSeedMode == "" {
+			hnErrs := classifier.ClassifyAndSend(
+				itemIDs,
+				dTree,
+				jev,
+				transport,
+			)
 
-		for _, hnErr := range hnErrs {
-			message := fmt.Sprintf("Err: %v, ID: %d", hnErr.Err, hnErr.ID)
-			if hnErr.Item != nil {
-				message = fmt.Sprintf("Err: %v, ID: %d, url: %s", hnErr.Err, hnErr.ID, hnErr.Item.URL)
+			for _, hnErr := range hnErrs {
+				message := fmt.Sprintf("Err: %v, ID: %d", hnErr.Err, hnErr.ID)
+				if hnErr.Item != nil {
+					message = fmt.Sprintf("Err: %v, ID: %d, url: %s", hnErr.Err, hnErr.ID, hnErr.Item.URL)
+				}
+
+				transport.Alert(message)
 			}
-
-			transport.Alert(message)
 		}
 
 		if err := content.CreateArticles(db, itemIDs); err != nil {
@@ -88,6 +92,11 @@ func main() {
 			}
 		} else {
 			failedWriteCount = 0
+		}
+
+		if isSeedMode != "" {
+			log.Println("seeded article IDs. exiting")
+			break
 		}
 
 		time.Sleep(120 * time.Second)

@@ -79,7 +79,12 @@ func InitDb() *sql.DB {
 		dbPath = "."
 	}
 
-	db, err := sql.Open("sqlite3", filepath.Join(dbPath, "subscribehn.db?_foreign_keys=on&_journal_mode=WAL"))
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "hndelegate.db"
+	}
+
+	db, err := sql.Open("sqlite3", filepath.Join(dbPath, dbName+"?_foreign_keys=on&_journal_mode=WAL"))
 	if err != nil {
 		log.Fatal(err)
 	}

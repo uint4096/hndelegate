@@ -2,11 +2,11 @@ package classifier
 
 import (
 	"fmt"
+	"hndelegate/content"
+	"hndelegate/decisions"
+	"hndelegate/model"
+	"hndelegate/transport"
 	"slices"
-	"subscribehn/content"
-	"subscribehn/decisions"
-	"subscribehn/model"
-	"subscribehn/transport"
 )
 
 type HNError struct {

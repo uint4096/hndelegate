@@ -10,7 +10,7 @@ import (
 	readability "codeberg.org/readeck/go-readability/v2"
 )
 
-const UserAgent = "uint4096/subscribehn (+https://github.com/uint4096/subscribehn)"
+const UserAgent = "uint4096/hndelegate (+https://github.com/uint4096/hndelegate)"
 
 type Post struct {
 	Title   string `json:"title"`

@@ -1,8 +1,8 @@
 package model
 
 import (
-	"subscribehn/content"
-	"subscribehn/decisions"
+	"hndelegate/content"
+	"hndelegate/decisions"
 )
 
 type Model[A any] interface {

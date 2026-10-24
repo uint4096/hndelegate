@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hndelegate/content"
+	"hndelegate/decisions"
 	"io"
 	"net/http"
 	"os"
 	"slices"
-	"subscribehn/content"
-	"subscribehn/decisions"
 	"time"
 )
 

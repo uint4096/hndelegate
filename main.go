@@ -6,7 +6,7 @@ import (
 	"hndelegate/classifier"
 	"hndelegate/content"
 	"hndelegate/decisions"
-	"hndelegate/model"
+	"hndelegate/model/jev"
 	"hndelegate/sqlite"
 	"hndelegate/transport"
 	"io/fs"
@@ -31,7 +31,7 @@ func main() {
 
 	hn := content.NewHNClient()
 
-	jev, err := model.NewJev()
+	jev, err := jev.New()
 	if err != nil {
 		log.Fatal(err)
 	}

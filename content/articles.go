@@ -13,8 +13,8 @@ type Article struct {
 	Title string
 }
 
-func GetArticles(db *sql.DB) (map[int]Article, error) {
-	rows, err := db.Query("SELECT id, hn_id FROM Articles WHERE expires_at > unixepoch() ORDER BY hn_id desc LIMIT 500")
+func GetArticles(db *sql.DB, minID int) (map[int]Article, error) {
+	rows, err := db.Query("SELECT id, hn_id FROM Articles WHERE hn_id >= ? ORDER BY hn_id desc", minID)
 	if err != nil {
 		return nil, fmt.Errorf("articles fetch: %w", err)
 	}

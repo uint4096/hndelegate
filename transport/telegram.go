@@ -73,7 +73,11 @@ func (t *Telegram) send(chatID string, msg string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("telegram request: %s", resp.Status)
+		var r struct {
+			Description string `json:"description"`
+		}
+		json.NewDecoder(resp.Body).Decode(&r)
+		return fmt.Errorf("telegram request: %s: %s", resp.Status, r.Description)
 	}
 
 	return nil

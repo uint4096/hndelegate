@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 )
 
@@ -96,7 +97,7 @@ func (hn *HNClient) GetNewItemIds(db *sql.DB) ([]int, error) {
 		return nil, err
 	}
 
-	savedIDs, err := GetArticles(db)
+	savedIDs, err := GetArticles(db, slices.Min(storyIDs))
 	if err != nil {
 		return nil, err
 	}

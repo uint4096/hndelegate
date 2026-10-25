@@ -3,12 +3,12 @@ module hndelegate
 go 1.27.2
 
 require (
+	codeberg.org/readeck/go-readability/v2 v2.1.3
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.52
 )
 
 require (
-	codeberg.org/readeck/go-readability/v2 v2.1.3 // indirect
 	github.com/andybalholm/cascadia v1.3.5 // indirect
 	github.com/go-shiori/dom v0.0.0-20230515143342-73569d674e1c // indirect
 	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f // indirect

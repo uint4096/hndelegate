@@ -1,26 +1,32 @@
 package classifier
 
 import (
+	"database/sql"
 	"fmt"
 	"hndelegate/content"
 	"hndelegate/decisions"
 	"hndelegate/model"
 	"hndelegate/transport"
 	"slices"
+	"strings"
 )
 
-type HNError struct {
+type HNResult struct {
 	ID   int
 	Err  error
 	Item *content.HNItem
 }
 
-func WalkHNItems(itemIDs []int, fn func(item *content.HNItem, post *content.Post) error) []HNError {
+func WalkHNItems(
+	itemIDs []int,
+	fn func(item *content.HNItem, post *content.Post) error,
+	skip func(item *content.HNItem) (bool, error),
+) []HNResult {
 	hnClient := content.NewHNClient()
 
-	errors := []HNError{}
+	result := []HNResult{}
 	fetcher := content.NewFetcher()
-	ch := make(chan HNError)
+	ch := make(chan HNResult)
 	semaphore := make(chan struct{}, 5)
 
 	for _, id := range itemIDs {
@@ -29,34 +35,37 @@ func WalkHNItems(itemIDs []int, fn func(item *content.HNItem, post *content.Post
 			defer func() { <-semaphore }()
 			item, err := hnClient.GetItem(id)
 			if err != nil {
-				ch <- HNError{id, err, item}
+				ch <- HNResult{id, err, item}
 				return
 			}
 
-			if item.Type != content.Story || item.URL == "" {
-				ch <- HNError{ID: id, Item: item}
+			s, err := skip(item)
+			if err != nil {
+				ch <- HNResult{id, err, item}
+				return
+			}
+
+			if s {
+				ch <- HNResult{ID: id, Item: item}
 				return
 			}
 
 			post, err := fetcher.Get(item.URL)
 			if err != nil {
-				ch <- HNError{id, err, item}
+				ch <- HNResult{id, err, item}
 				return
 			}
 
-			ch <- HNError{ID: id, Err: fn(item, post), Item: item}
+			ch <- HNResult{ID: id, Err: fn(item, post), Item: item}
 		}()
 	}
 
 	for range itemIDs {
-		hnErr := <-ch
-
-		if hnErr.Err != nil {
-			errors = append(errors, hnErr)
-		}
+		hnRes := <-ch
+		result = append(result, hnRes)
 	}
 
-	return errors
+	return result
 }
 
 func ClassifyAndSend[A any](
@@ -64,9 +73,10 @@ func ClassifyAndSend[A any](
 	roots []*decisions.DecisionTree,
 	model model.Model[A],
 	t transport.Transport,
-) []HNError {
+	db *sql.DB,
+) []HNResult {
 	if len(itemIDs) == 0 {
-		return []HNError{}
+		return []HNResult{}
 	}
 
 	w := func(item *content.HNItem, post *content.Post) error {
@@ -102,7 +112,15 @@ func ClassifyAndSend[A any](
 		return nil
 	}
 
-	errors := WalkHNItems(itemIDs, w)
+	s := func(item *content.HNItem) (bool, error) {
+		if item.Type != content.Story || item.URL == "" || strings.HasPrefix(item.Title, "Show HN:") {
+			return true, nil
+		}
+
+		return content.TitleExists(db, item.Title)
+	}
+
+	errors := WalkHNItems(itemIDs, w, s)
 
 	return errors
 }

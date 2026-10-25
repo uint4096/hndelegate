@@ -63,25 +63,49 @@ func main() {
 		failedHNCount = 0
 
 		isSeedMode := os.Getenv("SEED_MODE")
+		a := []content.Article{}
+
 		if isSeedMode == "" {
-			hnErrs := classifier.ClassifyAndSend(
+			result := classifier.ClassifyAndSend(
 				itemIDs,
 				dTree,
 				jev,
 				transport,
+				db,
 			)
 
-			for _, hnErr := range hnErrs {
-				message := fmt.Sprintf("Err: %v, ID: %d", hnErr.Err, hnErr.ID)
-				if hnErr.Item != nil {
-					message = fmt.Sprintf("Err: %v, ID: %d, url: %s", hnErr.Err, hnErr.ID, hnErr.Item.URL)
+			for _, res := range result {
+				title := ""
+				if res.Item != nil {
+					title = res.Item.Title
 				}
 
+				a = append(a, content.Article{
+					HNID:  res.ID,
+					Title: title,
+				})
+
+				if res.Err == nil {
+					continue
+				}
+
+				message := fmt.Sprintf("Err: %v, ID: %d", res.Err, res.ID)
+				if res.Item != nil {
+					message = fmt.Sprintf("Err: %v, ID: %d, url: %s", res.Err, res.ID, res.Item.URL)
+				}
+
+				log.Printf("hn err: %v", res)
 				transport.Alert(message)
+			}
+		} else {
+			for _, id := range itemIDs {
+				a = append(a, content.Article{
+					HNID: id,
+				})
 			}
 		}
 
-		if err := content.CreateArticles(db, itemIDs); err != nil {
+		if err := content.CreateArticles(db, a); err != nil {
 			transport.Alert(fmt.Sprintf("articles sqlite write: %v", err))
 
 			failedWriteCount += 1

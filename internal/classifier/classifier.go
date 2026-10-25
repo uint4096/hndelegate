@@ -3,10 +3,10 @@ package classifier
 import (
 	"database/sql"
 	"fmt"
-	"hndelegate/content"
-	"hndelegate/decisions"
-	"hndelegate/model"
-	"hndelegate/transport"
+	"hndelegate/internal/content"
+	"hndelegate/internal/decisions"
+	"hndelegate/internal/model"
+	"hndelegate/internal/transport"
 	"slices"
 	"strings"
 )

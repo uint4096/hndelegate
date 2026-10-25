@@ -2,9 +2,9 @@ package jev
 
 import (
 	"fmt"
-	"hndelegate/content"
-	"hndelegate/decisions"
-	"hndelegate/model"
+	"hndelegate/internal/content"
+	"hndelegate/internal/decisions"
+	"hndelegate/internal/model"
 	"slices"
 )
 

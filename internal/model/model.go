@@ -1,8 +1,8 @@
 package model
 
 import (
-	"hndelegate/content"
-	"hndelegate/decisions"
+	"hndelegate/internal/content"
+	"hndelegate/internal/decisions"
 )
 
 type Model[A any] interface {

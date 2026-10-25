@@ -2,7 +2,7 @@ bin
 *.db
 *.db-*
 *.sql
-!sqlite/migrations/*.sql
+!internal/sqlite/migrations/*.sql
 *.txt
 .env
 .env.*

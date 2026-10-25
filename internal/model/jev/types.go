@@ -3,7 +3,7 @@ package jev
 import (
 	"encoding/json"
 	"fmt"
-	"hndelegate/content"
+	"hndelegate/internal/content"
 )
 
 type QuestionType string

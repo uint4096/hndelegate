@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+bin
+*.db
+*.db-*
+*.txt
+*.ndjson
+queries.sql

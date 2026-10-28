@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -37,6 +38,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	maxCount, err := strconv.Atoi(os.Getenv("MAX_ITEMS_PER_ROUND"))
+	if err != nil || maxCount <= 0 {
+		maxCount = 20
+	}
+
 	failedWriteCount := 0
 	failedHNCount := 0
 
@@ -47,7 +53,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		itemIDs, err := hn.GetNewItemIds(db)
+		ids, err := hn.GetNewItemIds(db)
 		if err != nil {
 			log.Println(err)
 
@@ -62,47 +68,47 @@ func main() {
 		}
 		failedHNCount = 0
 
-		isSeedMode := os.Getenv("SEED_MODE")
+		itemIDs := ids[:min(maxCount, len(ids))]
+		if skipped := len(ids) - len(itemIDs); skipped > 0 {
+			log.Printf("skipped %d stories", skipped)
+		}
+
 		a := []content.Article{}
 
-		if isSeedMode == "" {
-			result := classifier.ClassifyAndSend(
-				itemIDs,
-				dTree,
-				jev,
-				transport,
-				db,
-			)
+		result := classifier.ClassifyAndSend(
+			itemIDs,
+			dTree,
+			jev,
+			transport,
+			db,
+		)
 
-			for _, res := range result {
-				title := ""
-				if res.Item != nil {
-					title = res.Item.Title
-				}
-
-				a = append(a, content.Article{
-					HNID:  res.ID,
-					Title: title,
-				})
-
-				if res.Err == nil {
-					continue
-				}
-
-				message := fmt.Sprintf("Err: %v, ID: %d", res.Err, res.ID)
-				if res.Item != nil {
-					message = fmt.Sprintf("Err: %v, ID: %d, url: %s", res.Err, res.ID, res.Item.URL)
-				}
-
-				log.Printf("hn err: %v", res)
-				transport.Alert(message)
+		for _, res := range result {
+			title := ""
+			if res.Item != nil {
+				title = res.Item.Title
 			}
-		} else {
-			for _, id := range itemIDs {
-				a = append(a, content.Article{
-					HNID: id,
-				})
+
+			a = append(a, content.Article{
+				HNID:  res.ID,
+				Title: title,
+			})
+
+			if res.Err == nil {
+				continue
 			}
+
+			message := fmt.Sprintf("Err: %v, ID: %d", res.Err, res.ID)
+			if res.Item != nil {
+				message = fmt.Sprintf("Err: %v, ID: %d, url: %s", res.Err, res.ID, res.Item.URL)
+			}
+
+			log.Printf("hn err: %v", res)
+			transport.Alert(message)
+		}
+
+		for _, id := range ids[len(itemIDs):] {
+			a = append(a, content.Article{HNID: id})
 		}
 
 		if err := content.CreateArticles(db, a); err != nil {
@@ -116,11 +122,6 @@ func main() {
 			}
 		} else {
 			failedWriteCount = 0
-		}
-
-		if isSeedMode != "" {
-			log.Println("seeded article IDs. exiting")
-			break
 		}
 
 		time.Sleep(120 * time.Second)

@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const TelegramBaseURL = "https://api.telegram.org"
+
 type Telegram struct {
 	client      *http.Client
 	requestURL  string
@@ -25,8 +27,11 @@ func NewTelegram() (*Telegram, error) {
 	errorChatID := os.Getenv("TELEGRAM_ERROR_CHAT_ID")
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	baseURL := os.Getenv("TELEGRAM_BASE_URL")
+	if baseURL == "" {
+		baseURL = TelegramBaseURL
+	}
 
-	if chatID == "" || botToken == "" || baseURL == "" || errorChatID == "" {
+	if chatID == "" || botToken == "" {
 		return nil, fmt.Errorf("missing telegram creds")
 	}
 
@@ -95,6 +100,10 @@ func (t *Telegram) Send(msg Post) error {
 }
 
 func (t *Telegram) Alert(msg string) {
+	if t.errorChatID == "" {
+		return
+	}
+
 	m := fmt.Sprintf(`%s`, html.EscapeString(msg[:min(len(msg), 3500)]))
 	if err := t.send(t.errorChatID, m); err != nil {
 		log.Printf("failed alert. err: %v. msg: %s\n", err, msg)

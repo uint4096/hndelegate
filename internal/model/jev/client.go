@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const JevBaseURL = "https://api.typesafe.ai/v1/systemone"
+
 type Client struct {
 	baseURL    string
 	apiKey     string
@@ -18,9 +20,12 @@ type Client struct {
 
 func New() (*Client, error) {
 	baseURL := os.Getenv("JEV_BASE_URL")
-	apiKey := os.Getenv("JEV_API_KEY")
+	if baseURL == "" {
+		baseURL = JevBaseURL
+	}
 
-	if baseURL == "" || apiKey == "" {
+	apiKey := os.Getenv("JEV_API_KEY")
+	if apiKey == "" {
 		return nil, fmt.Errorf("missing credentials")
 	}
 

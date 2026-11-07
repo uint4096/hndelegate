@@ -7,6 +7,8 @@ import (
 	"hndelegate/internal/decisions"
 	"hndelegate/internal/model"
 	"hndelegate/internal/transport"
+	"net/url"
+	"os"
 	"slices"
 	"strings"
 )
@@ -15,6 +17,26 @@ type HNResult struct {
 	ID   int
 	Err  error
 	Item *content.HNItem
+}
+
+func excludedDomains() []string {
+	excluded := os.Getenv("EXCLUDED_DOMAINS")
+	if excluded != "" {
+		return strings.Split(excluded, ",")
+	}
+
+	return []string{
+		"reddit.com",
+		"youtube.com",
+		"cnn.com",
+		"medium.com",
+		"bloomberg.com",
+		"nytimes.com",
+		"reuters.com",
+		"arstechnica.com",
+		"washingtonpost.com",
+		"wsj.com",
+	}
 }
 
 func WalkHNItems(
@@ -112,8 +134,23 @@ func ClassifyAndSend[A any](
 		return nil
 	}
 
+	excluded := excludedDomains()
+
 	s := func(item *content.HNItem) (bool, error) {
 		if item.Type != content.Story || item.URL == "" || strings.HasPrefix(item.Title, "Show HN:") {
+			return true, nil
+		}
+
+		u, err := url.Parse(item.URL)
+
+		matcher := func(d string) bool {
+			host := strings.ToLower(u.Hostname())
+			d = strings.ToLower(strings.TrimSpace(d))
+
+			return d != "" && (host == d || strings.HasSuffix(host, "."+d))
+		}
+
+		if err != nil || slices.ContainsFunc(excluded, matcher) {
 			return true, nil
 		}
 

@@ -24,6 +24,7 @@ You can get the latest release [here](https://github.com/uint4096/hndelegate/rel
 | `TELEGRAM_ERROR_CHAT_ID`  | An optional chat ID to send alerts for hndelegate errors.                                                                                   |  Optional    |
 | `MAX_ITEMS_PER_ROUND`     | Maximum number of posts processed per round (every two minutes). Skipped posts are dropped completely. Defaults to 20.                      |  Optional    |
 | `DB_PATH`                 | Path to the directory containing the SQLite database (creates the db if none exists). Defaults to the current directory.                    |  Optional    |
+| `EXCLUDED_DOMAINS`        | Comma-separated list of domains whose stories are skipped (subdomains included, e.g. `reddit.com` also matches `old.reddit.com`). Replaces the default list: `reddit.com`, `youtube.com`, `cnn.com`, `medium.com`, `bloomberg.com`, `nytimes.com`, `reuters.com`, `arstechnica.com`, `washingtonpost.com`, `wsj.com`. |  Optional    |
 
 You must add at least one decision tree to the database for hndelegate to run. See [Decisions](docs/decisions.md).
 
